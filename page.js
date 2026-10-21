@@ -334,8 +334,8 @@ var page = {
         case 'capture_window': response(page.getWindowSize()); return true;break;
         case 'show_selection_area': page.showSelectionArea(); return true;break;
         case 'scroll_init': // Capture whole page.
-          response(page.scrollInit(0, 0, document.body.scrollWidth,
-              document.body.scrollHeight, 'captureWhole'));
+          response(page.scrollInit(0, 0, page.getDocumentDimensions().width,
+              page.getDocumentDimensions().height, 'captureWhole'));
           return true;
           break;
         case 'scroll_next':
@@ -371,8 +371,9 @@ var page = {
     this.hookBodyScrollValue(true);
     page.captureHeight = canvasHeight;
     page.captureWidth = canvasWidth;
-    var docWidth = document.body.scrollWidth;
-    var docHeight = document.body.scrollHeight;
+    var dimensions = page.getDocumentDimensions();
+    var docWidth = dimensions.width;
+    var docHeight = dimensions.height;
     window.scrollTo(startX, startY);
 
     this.handleFixedElements('top_left');
@@ -461,9 +462,18 @@ var page = {
     setTimeout(page.createSelectionArea, 100);
   },
 
+  getDocumentDimensions: function() {
+    const root = document.documentElement;
+    const body = document.body;
+    return {
+      width: Math.max(root.scrollWidth, root.clientWidth, body?.scrollWidth || 0, body?.clientWidth || 0),
+      height: Math.max(root.scrollHeight, root.clientHeight, body?.scrollHeight || 0, body?.clientHeight || 0)
+    };
+  },
+
   getWindowSize: function() {
-    var docWidth = document.width;
-    var docHeight = document.height;
+    var docWidth = page.getDocumentDimensions().width;
+    var docHeight = page.getDocumentDimensions().height;
     if (page.isGMailPage()) {
       var frame = document.getElementById('canvas_frame');
       docHeight = frame.contentDocument.height;
@@ -485,8 +495,8 @@ var page = {
         'height': page.endY - page.startY,
         'visibleWidth': document.documentElement.clientWidth,
         'visibleHeight': document.documentElement.clientHeight,
-        'docWidth': document.width,
-        'docHeight': document.height
+        'docWidth': page.getDocumentDimensions().width,
+        'docHeight': page.getDocumentDimensions().height
       })}, 100);
   },
 
@@ -509,16 +519,16 @@ var page = {
     var zoom = page.getZoomLevel();
     var bodyStyle = window.getComputedStyle(document.body, null);
     if ('relative' == bodyStyle['position']) {
-      page.marginTop = page.matchMarginValue(bodyStyle['marginTop']);
-      page.marginLeft = page.matchMarginValue(bodyStyle['marginLeft']);
+      page.marginTop = page.matchMarginValue(bodyStyle['marginTop']) || 0;
+      page.marginLeft = page.matchMarginValue(bodyStyle['marginLeft']) || 0;
       areaProtector.style.top =  - parseInt(page.marginTop) + 'px';
       areaProtector.style.left =  - parseInt(page.marginLeft) + 'px';
     }
     areaProtector.style.width =
-      Math.round((document.width + parseInt(page.marginLeft)) / zoom) + 'px';
+      Math.round((page.getDocumentDimensions().width + parseInt(page.marginLeft)) / zoom) + 'px';
     areaProtector.style.height =
-      Math.round((document.height + parseInt(page.marginTop)) / zoom) + 'px';
-    areaProtector.onclick = function() {
+      Math.round((page.getDocumentDimensions().height + parseInt(page.marginTop)) / zoom) + 'px';
+    areaProtector.onclick = function(event) {
       event.stopPropagation();
       return false;
     };
@@ -595,7 +605,7 @@ var page = {
   /**
   * Init selection area due to the position of the mouse when mouse down
   */
-  onMouseDown: function() {
+  onMouseDown: function(event) {
     if (event.button != 2) {
       var element = event.target;
 
@@ -646,7 +656,7 @@ var page = {
   /**
   * Change selection area position when mouse moved
   */
-  onMouseMove: function() {
+  onMouseMove: function(event) {
     var element = event.target;
     if (element && page.isMouseDown) {
       var areaElement = $('sc_drag_area');
@@ -657,8 +667,8 @@ var page = {
           var width = 0;
           var height = 0;
           var zoom = page.getZoomLevel();
-          var viewWidth = Math.round(document.width / zoom);
-          var viewHeight = Math.round(document.height / zoom);
+          var viewWidth = Math.round(page.getDocumentDimensions().width / zoom);
+          var viewHeight = Math.round(page.getDocumentDimensions().height / zoom);
           if (xPosition > viewWidth) {
             xPosition = viewWidth;
           } else if (xPosition < 0) {
@@ -721,7 +731,7 @@ var page = {
         }
         var crop = document.getElementById('sc_drag_crop');
         var cancel = document.getElementById('sc_drag_cancel');
-        if (event.pageY + 25 > document.height) {
+        if (event.pageY + 25 > page.getDocumentDimensions().height) {
           crop.style.bottom = 0;
           cancel.style.bottom = 0
         } else {
@@ -745,7 +755,7 @@ var page = {
  /**
   * Fix the selection area position when mouse up
   */
-  onMouseUp: function() {
+  onMouseUp: function(event) {
     page.isMouseDown = false;
     if (event.button != 2) {
       page.resizing = false;

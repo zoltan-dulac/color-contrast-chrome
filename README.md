@@ -46,3 +46,8 @@ Versions
 0.53
 * initial commit
 
+
+
+## Cross-browser builds
+
+Run `python3 build.py` to generate Chrome and Firefox builds from shared source. See [CROSS-BROWSER.md](CROSS-BROWSER.md).

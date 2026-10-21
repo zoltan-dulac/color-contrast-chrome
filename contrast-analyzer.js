@@ -9,8 +9,8 @@ function Canvas() {
 }
 
 function isHighVersion() {
-    var version = navigator.userAgent.match(/Chrome\/(\d+)/)[1];
-    return version > 9;
+    var match = navigator.userAgent.match(/Chrome\/(\d+)/);
+    return !match || Number(match[1]) > 9;
 }
 
 function $(id) {

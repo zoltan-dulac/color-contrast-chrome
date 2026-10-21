@@ -33,9 +33,9 @@ async function save() {
  await chrome.tabs.create({url:chrome.runtime.getURL('contrast-analyzer.html')});
  job=null;
 }
-async function begin(kind) {
+async function begin(kind, sourceTab) {
  if(job) throw new Error('Capture already in progress');
- const tab=await activeTab(); job={tab};
+ const tab=sourceTab || await activeTab(); job={tab};
  try {
    if(kind==='capture_area') { await messageTab({msg:'show_selection_area'}); job=null; return; }
    if(kind==='capture_screen') throw new Error('Screen capture is not supported');
@@ -76,7 +76,7 @@ async function begin(kind) {
 }
 chrome.runtime.onMessage.addListener((request,sender,respond)=>{
  if(request.msg==='capture_selected' && sender.tab) {
-   if(!job) begin('capture_selected').catch(console.error);
+   if(!job) begin('capture_selected', sender.tab).catch(console.error);
    return;
  }
  if(request.msg==='capture_hot_key') return;

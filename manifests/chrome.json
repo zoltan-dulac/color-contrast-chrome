@@ -1,0 +1,75 @@
+{
+  "background": {
+    "service_worker": "background-mv3.js"
+  },
+  "content_scripts": [
+    {
+      "css": [
+        "style.css"
+      ],
+      "js": [
+        "page.js",
+        "shortcut.js"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "run_at": "document_end"
+    },
+    {
+      "js": [
+        "isLoad.js"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "default_locale": "en",
+  "description": "__MSG_description__",
+  "icons": {
+    "128": "images/icon_128.png",
+    "16": "images/icon_16.png",
+    "19": "images/icon_19.png",
+    "32": "images/icon_32.png",
+    "48": "images/icon_48.png"
+  },
+  "manifest_version": 3,
+  "name": "__MSG_name__",
+  "options_page": "options.html",
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "unlimitedStorage",
+    "downloads"
+  ],
+  "version": "1.1.2",
+  "short_name": "CC Analyzer",
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "page_context.js",
+        "style.css"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
+    }
+  ],
+  "action": {
+    "default_icon": "images/icon_19.png",
+    "default_popup": "popup.html",
+    "default_title": "__MSG_default_title__"
+  },
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*",
+    "file:///*"
+  ]
+}
