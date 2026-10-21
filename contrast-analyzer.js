@@ -102,11 +102,38 @@ var photoshop = {
     highlightMode: 'rectangle',
     text: '',
     i18nReplace: i18nReplace,
+    // Keep the full screenshot resolution in the backing canvas. Only the
+    // CSS rendering size changes, shared by image, mask, and photo container.
+    fitImageToViewport: function() {
+        const pixelWidth = $('canvas').width;
+        const pixelHeight = $('canvas').height;
+        if (!pixelWidth || !pixelHeight) return;
+        const naturalCssWidth = bg.screenshot.cssWidth || pixelWidth;
+        const naturalCssHeight = bg.screenshot.cssHeight || pixelHeight;
+        const availableWidth = $('showBox').clientWidth;
+        const scale = availableWidth > 0 ? Math.min(1, availableWidth / naturalCssWidth) : 1;
+        const renderedWidth = naturalCssWidth * scale;
+        const renderedHeight = naturalCssHeight * scale;
+        $('photo').style.width = renderedWidth + 'px';
+        $('photo').style.height = renderedHeight + 'px';
+        for (const id of ['canvas', 'mask-canvas', 'contrastMask']) {
+            const element = $(id);
+            if (element) {
+                element.style.width = renderedWidth + 'px';
+                element.style.height = renderedHeight + 'px';
+            }
+        }
+    },
     initCanvas: function() {
-        $('canvas').width = $('mask-canvas').width = $('photo').style.width =
-                photoshop.canvas.width = bg.screenshot.canvas.width;
-        $('canvas').height = $('mask-canvas').height = $('photo').style.height =
-                photoshop.canvas.height = bg.screenshot.canvas.height;
+        // Maintain native screenshot pixels for WCAG calculations and export.
+        // Display the screenshot at its original CSS pixel dimensions (Retina-safe).
+        const pixelWidth = bg.screenshot.canvas.width;
+        const pixelHeight = bg.screenshot.canvas.height;
+        const cssWidth = bg.screenshot.cssWidth || pixelWidth;
+        const cssHeight = bg.screenshot.cssHeight || pixelHeight;
+        $('canvas').width = $('mask-canvas').width = photoshop.canvas.width = pixelWidth;
+        $('canvas').height = $('mask-canvas').height = photoshop.canvas.height = pixelHeight;
+        photoshop.fitImageToViewport();
         var context = photoshop.canvas.getContext('2d');
         context.drawImage(bg.screenshot.canvas, 0, 0);
         context = $('canvas').getContext('2d');
@@ -124,7 +151,7 @@ var photoshop = {
         var showBoxHeight = function() {
             $('showBox').style.height = (window.innerHeight - photoshop.offsetY - 1) + 'px';
         }
-        setTimeout(showBoxHeight, 50);
+        setTimeout(() => { showBoxHeight(); photoshop.fitImageToViewport(); }, 50);
     },
     markCurrentElement: function(element) {
         if (element && element.parentNode) {
@@ -421,6 +448,8 @@ chrome.storage.local.get('lastCapture', ({lastCapture}) => {
         bg.screenshot.canvas.height=img.naturalHeight;
         bg.screenshot.canvas.getContext('2d').drawImage(img,0,0);
         bg.screenshot.tab.title=lastCapture.title || 'Screenshot';
+        bg.screenshot.cssWidth=Number(lastCapture.cssWidth) || img.naturalWidth;
+        bg.screenshot.cssHeight=Number(lastCapture.cssHeight) || img.naturalHeight;
         photoshop.init();
         beginContrastAnalysis();
     };
@@ -524,3 +553,5 @@ function enableDownloadButton(v) {
     }
 }
 
+
+window.addEventListener('resize', () => photoshop.fitImageToViewport());

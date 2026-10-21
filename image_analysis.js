@@ -15,6 +15,10 @@ function draw() {
     canv.id = 'contrastMask';
     canv.width = w;
     canv.height = h;
+    // Match the display size of the underlying screenshot canvas; the backing
+    // bitmap remains at native physical-pixel resolution.
+    canv.style.width = document.getElementById('canvas').style.width;
+    canv.style.height = document.getElementById('canvas').style.height;
 
     document.getElementById('photo').appendChild(canv); // adds the canvas to the body element
 

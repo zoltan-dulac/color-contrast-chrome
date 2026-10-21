@@ -14,3 +14,6 @@ For debugging: inspect the service worker on chrome://extensions; inspect the an
 
 ## Analyzer scan fix
 The canvas analysis now starts after the captured image has loaded and has been drawn. Previously, the analysis worker was started with the initial empty 300 x 150 canvas. The mask rendering now calls putImageData once after the full image is constructed, instead of once per scanline.
+
+## Retina/HiDPI rendering fix
+Captured image pixel dimensions remain unchanged for contrast analysis and exported PNGs. The original tab/page CSS dimensions are stored with each capture and used only for the displayed screenshot, drawing canvas, and contrast-mask overlay. Reload the extension after replacing files.
