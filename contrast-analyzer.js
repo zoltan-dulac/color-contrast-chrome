@@ -75,7 +75,7 @@ $('rescanButton').addEventListener('click', function(e) {
     location.reload();
 });
 
-var bg = chrome.extension.getBackgroundPage();
+var bg = {screenshot: {canvas: document.createElement('canvas'), tab: {title: ''}, isThisPlatform: (platform) => navigator.userAgent.toLowerCase().includes(platform)}};
 var canvas = new Canvas();
 
 var photoshop = {
@@ -122,7 +122,7 @@ var photoshop = {
         photoshop.initCanvas();
         photoshop.tabTitle = bg.screenshot.tab.title;
         var showBoxHeight = function() {
-            $('showBox').style.height = window.innerHeight - photoshop.offsetY - 1;
+            $('showBox').style.height = (window.innerHeight - photoshop.offsetY - 1) + 'px';
         }
         setTimeout(showBoxHeight, 50);
     },
@@ -140,12 +140,10 @@ var photoshop = {
         }
     },
     openOptionPage: function() {
-        chrome.tabs.create({url: chrome.extension.getURL("options.html")});
+        chrome.tabs.create({url: chrome.runtime.getURL("options.html")});
     },
     closeCurrentTab: function() {
-        chrome.tabs.getSelected(null, function(tab) {
-            chrome.tabs.remove(tab.id);
-        });
+        chrome.tabs.getCurrent(tab => { if (tab) chrome.tabs.remove(tab.id); });
     },
     finish: function() {
         var context = $('canvas').getContext('2d');
@@ -201,55 +199,22 @@ var photoshop = {
     },
     save: function() {
         photoshop.draw();
-        var formatParam = localStorage.screenshootQuality || 'png';
-        var dataUrl;
-        if (formatParam == 'jpeg' && isHighVersion())
-            dataUrl = $('canvas').toDataURL('image/jpeg', 0.5);
-        else
-            dataUrl = $('canvas').toDataURL('image/png');
-
-        // Here we use the plugin object in showimage.html 
-        // instead of the plugin object in background page, 
-        // so that the SaveScreenshot dialog will be a modal dialog.
-        var pluginobj = document.getElementById('pluginobj');
-        if (!localStorage.lastSavePath)
-            localStorage.lastSavePath = localStorage.savePath;
-        pluginobj.SaveScreenshot(
-                dataUrl, photoshop.tabTitle, localStorage.lastSavePath,
-                function(result, path) {
-                    var message = chrome.i18n.getMessage('save_fail');
-                    var messageClass = 'tip_failed';
-                    if (result == 0 && path) {
-                        var i18nMessage = chrome.i18n.getMessage('saved_to_path');
-                        message = i18nMessage + '<a title="' + path +
-                                '" onclick="bg.plugin.openSavePath(\'' +
-                                path.replace(/\\/g, '/') + '\');">' + path + '</a>';
-                        messageClass = 'tip_succeed';
-                        localStorage.lastSavePath = path;
-                    }
-                    if (result != 2)
-                        photoshop.showTip(messageClass, message, 5000);
-                },
-                chrome.i18n.getMessage("save_image"));
+        const dataUrl=$('canvas').toDataURL('image/png');
+        chrome.downloads.download({url:dataUrl, filename:'contrast-analysis.png',saveAs:true}, () => {
+            if (chrome.runtime.lastError) console.error(chrome.runtime.lastError.message);
+        });
         photoshop.finish();
     },
-    copy: function() {
+    copy: async function() {
         photoshop.draw();
-        var formatParam = localStorage.screenshootQuality || 'png';
-        var dataUrl;
-        if (formatParam == 'jpeg' && isHighVersion())
-            dataUrl = $('canvas').toDataURL('image/jpeg', 0.5);
-        else
-            dataUrl = $('canvas').toDataURL('image/png');
-        var copyFlag = bg.plugin.saveToClipboard(dataUrl);
-        var messageKey = 'tip_copy_failed';
-        var messageClass = 'tip_failed';
-        if (copyFlag) {
-            messageKey = 'tip_copy_succeed';
-            messageClass = 'tip_succeed';
+        try {
+            const blob = await new Promise(resolve => $('canvas').toBlob(resolve, 'image/png'));
+            await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+            photoshop.showTip('tip_succeed', chrome.i18n.getMessage('tip_copy_succeed'));
+        } catch (error) {
+            console.error('Copy failed:', error);
+            photoshop.showTip('tip_failed', chrome.i18n.getMessage('tip_copy_failed'));
         }
-        var message = chrome.i18n.getMessage(messageKey);
-        photoshop.showTip(messageClass, message);
         photoshop.finish();
     },
     printImage: function() {
@@ -263,7 +228,7 @@ var photoshop = {
         var width = $('canvas').width;
         var height = $('canvas').height;
         var pluginobj = document.getElementById('pluginobj');
-        pluginobj.PrintImage(dataUrl, photoshop.tabTitle, width, height);
+        window.print();
         photoshop.finish();
     },
     drawLineOnMaskCanvas: function(startX, startY, endX, endY, type, layerId) {
@@ -448,7 +413,19 @@ var photoshop = {
     }
 };
 
-photoshop.init();
+chrome.storage.local.get('lastCapture', ({lastCapture}) => {
+    if (!lastCapture?.dataUrl) { console.error('No captured image available'); return; }
+    const img = new Image();
+    img.onload = () => {
+        bg.screenshot.canvas.width=img.naturalWidth;
+        bg.screenshot.canvas.height=img.naturalHeight;
+        bg.screenshot.canvas.getContext('2d').drawImage(img,0,0);
+        bg.screenshot.tab.title=lastCapture.title || 'Screenshot';
+        photoshop.init();
+        beginContrastAnalysis();
+    };
+    img.src=lastCapture.dataUrl;
+});
 $('photo').addEventListener('mousemove', photoshop.onMouseMove, true);
 $('photo').addEventListener('mousedown', photoshop.onMouseDown, true);
 $('photo').addEventListener('mouseup', photoshop.onMouseUp, true);

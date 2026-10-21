@@ -846,7 +846,7 @@ var page = {
     var css = document.createElement('LINK');
     css.type = 'text/css';
     css.rel = 'stylesheet';
-    css.href = chrome.extension.getURL(cssResource);
+    css.href = chrome.runtime.getURL(cssResource);
     (document.head || document.body || document.documentElement).
         appendChild(css);
   },
@@ -855,7 +855,7 @@ var page = {
     var script = document.createElement("script");
     script.type = "text/javascript";
     script.charset = "utf-8";
-    script.src = chrome.extension.getURL(scriptResource);
+    script.src = chrome.runtime.getURL(scriptResource);
     (document.head || document.body || document.documentElement).
         appendChild(script);
   },

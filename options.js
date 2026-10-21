@@ -6,7 +6,7 @@ Read license.txt for licensing information.
 
 
 
-var bg = chrome.extension.getBackgroundPage();
+var bg = null;
 
 function $(id) {
   return document.getElementById(id);
@@ -56,9 +56,7 @@ function save() {
 
 function saveAndClose() {
   if (save()) {
-    chrome.tabs.getSelected(null, function(tab) {
-      chrome.tabs.remove(tab.id);
-    });
+    chrome.tabs.getCurrent(tab => { if (tab) chrome.tabs.remove(tab.id); });
     }
 }
 

@@ -5,9 +5,9 @@
  */
 
 
-var w = document.getElementById('canvas').getAttribute('width'); // width of the image
-var h = document.getElementById('canvas').getAttribute('height'); // height of the image
-var image = new Array(w * h); // a container to receive the resulting image
+var w = 0; // Set after the captured screenshot is drawn
+var h = 0;
+var image = []; // a container to receive the resulting image
 
 function draw() {
     // create a canvas element to draw the resulting image on
@@ -42,8 +42,8 @@ function draw() {
             id.data[pixelLocation + 3] = 255;
         }
         // draw the pixel
-        myContext.putImageData(id, 0, 0);
     }
+    myContext.putImageData(id, 0, 0);
 
     var bb = dataURItoBlob(canv.toDataURL("image/png"));
 
@@ -114,42 +114,38 @@ myWorker.onmessage = function(oEvent) {
 
 };
 
-var ctx = document.getElementById('canvas').getContext('2d');
-var imgd = ctx.getImageData(0, 0, w, h);
-var pix = new ArrayBuffer(w * h);
-var pixView = new Uint8Array(imgd.data);
-
-var myVars = new Array();
-myVars[0] = "contrastLevel";
-myVars[1] = "pixelRadius";
-
-// get the contrast level
-chrome.storage.sync.get(myVars, function(obj) {
-    var level = 4.5;
-    var radius = 2;
-    if (obj['contrastLevel'] == 'WCAG-aa-small') {
-        level = 4.5;
-    } else if (obj['contrastLevel'] == 'WCAG-aa-large') {
-        level = 3.0;
-    } else if (obj['contrastLevel'] == 'WCAG-aaa-small') {
-        level = 7.0;
-    } else if (obj['contrastLevel'] == 'WCAG-aaa-large') {
-        level = 4.5;
-    } else {
-        level = 4.5;
+// This must run AFTER the asynchronous screenshot has been loaded and painted.
+// At script evaluation time the canvas still has its default 300x150 size.
+function beginContrastAnalysis() {
+    const sourceCanvas = document.getElementById('canvas');
+    w = sourceCanvas.width;
+    h = sourceCanvas.height;
+    if (!w || !h) {
+        console.error('Contrast analysis cannot start: screenshot canvas is empty');
+        return;
     }
+    image = new Array(w * h);
+    const ctx = sourceCanvas.getContext('2d');
+    const imgd = ctx.getImageData(0, 0, w, h);
+    const pixView = new Uint8Array(imgd.data);
+    const myVars = ['contrastLevel', 'pixelRadius'];
+    document.getElementById('percentComplete').textContent = 'Starting...';
+    chrome.storage.sync.get(myVars, function(obj) {
+        const levelMap = {'WCAG-aa-small': 4.5, 'WCAG-aa-large': 3.0,
+                          'WCAG-aaa-small': 7.0, 'WCAG-aaa-large': 4.5};
+        const level = levelMap[obj.contrastLevel] || 4.5;
+        const parsedRadius = Number(obj.pixelRadius);
+        const radius = Number.isInteger(parsedRadius) && parsedRadius >= 1 && parsedRadius <= 3 ? parsedRadius : 2;
+        startAnalysis(level, radius, pixView);
+    });
+}
 
-    // get the pixel radius
-    radius = obj['pixelRadius'];
-    if (radius < 1 || radius > 3 || typeof radius == 'undefined') {
-        radius = 2;
-    } else {
-        radius = obj['pixelRadius'];
-    }
-    startAnalysis(level, radius);
-});
+myWorker.onerror = function(event) {
+    console.error('Contrast analysis worker failed:', event.message, event);
+    document.getElementById('percentComplete').textContent = 'Analysis failed';
+};
 
-function startAnalysis(level, radius) {
+function startAnalysis(level, radius, pixView) {
     // send the image and parameters to the thread
     myWorker.postMessage({
         "width": w,
