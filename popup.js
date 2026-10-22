@@ -50,31 +50,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 });
 
 function toDo(what) {
-    chrome.runtime.getBackgroundPage(function(backgroundPage) {
-        switch (what) {
-            case 'capture_screen':
-                backgroundPage.screenshot.captureScreen();
-                window.close();
-                break;
-            case 'capture_window':
-                backgroundPage.screenshot.captureWindow();
-                window.close();
-                break;
-            case 'capture_area':
-                backgroundPage.screenshot.showSelectionArea();
-                window.close();
-                break;
-            case 'capture_webpage':
-                backgroundPage.screenshot.captureWebpage();
-                $('loadDiv').style.display = 'block';
-                $('item').style.display = 'none';
-                break;
-            case 'capture_special_page':
-                backgroundPage.screenshot.captureSpecialPage();
-                window.close();
-                break;
+    chrome.runtime.sendMessage({msg:'start_capture',kind:what}, function(result) {
+        if (chrome.runtime.lastError || !result || !result.ok) {
+            console.error('Capture failed:', chrome.runtime.lastError?.message || result?.error);
         }
     });
+    window.close();
 }
 
 function i18nReplace(id, name) {
@@ -157,7 +138,7 @@ function init() {
                     resizeDivWidth('captureWindowText', textWidth);
                     resizeDivWidth('captureAreaText', textWidth);
                     resizeDivWidth('captureWebpageText', textWidth);
-                    var bg = chrome.extension.getBackgroundPage();
+                    
                     //if (bg.screenshot.isThisPlatform('mac')) {
                     //$('captureAreaShortcut').innerText = '\u2325\u2318R';
                     //$('captureWindowShortcut').innerText = '\u2325\u2318V';

@@ -9,8 +9,8 @@ function Canvas() {
 }
 
 function isHighVersion() {
-    var version = navigator.userAgent.match(/Chrome\/(\d+)/)[1];
-    return version > 9;
+    var match = navigator.userAgent.match(/Chrome\/(\d+)/);
+    return !match || Number(match[1]) > 9;
 }
 
 function $(id) {
@@ -75,7 +75,7 @@ $('rescanButton').addEventListener('click', function(e) {
     location.reload();
 });
 
-var bg = chrome.extension.getBackgroundPage();
+var bg = {screenshot: {canvas: document.createElement('canvas'), tab: {title: ''}, isThisPlatform: (platform) => navigator.userAgent.toLowerCase().includes(platform)}};
 var canvas = new Canvas();
 
 var photoshop = {
@@ -102,11 +102,38 @@ var photoshop = {
     highlightMode: 'rectangle',
     text: '',
     i18nReplace: i18nReplace,
+    // Keep the full screenshot resolution in the backing canvas. Only the
+    // CSS rendering size changes, shared by image, mask, and photo container.
+    fitImageToViewport: function() {
+        const pixelWidth = $('canvas').width;
+        const pixelHeight = $('canvas').height;
+        if (!pixelWidth || !pixelHeight) return;
+        const naturalCssWidth = bg.screenshot.cssWidth || pixelWidth;
+        const naturalCssHeight = bg.screenshot.cssHeight || pixelHeight;
+        const availableWidth = $('showBox').clientWidth;
+        const scale = availableWidth > 0 ? Math.min(1, availableWidth / naturalCssWidth) : 1;
+        const renderedWidth = naturalCssWidth * scale;
+        const renderedHeight = naturalCssHeight * scale;
+        $('photo').style.width = renderedWidth + 'px';
+        $('photo').style.height = renderedHeight + 'px';
+        for (const id of ['canvas', 'mask-canvas', 'contrastMask']) {
+            const element = $(id);
+            if (element) {
+                element.style.width = renderedWidth + 'px';
+                element.style.height = renderedHeight + 'px';
+            }
+        }
+    },
     initCanvas: function() {
-        $('canvas').width = $('mask-canvas').width = $('photo').style.width =
-                photoshop.canvas.width = bg.screenshot.canvas.width;
-        $('canvas').height = $('mask-canvas').height = $('photo').style.height =
-                photoshop.canvas.height = bg.screenshot.canvas.height;
+        // Maintain native screenshot pixels for WCAG calculations and export.
+        // Display the screenshot at its original CSS pixel dimensions (Retina-safe).
+        const pixelWidth = bg.screenshot.canvas.width;
+        const pixelHeight = bg.screenshot.canvas.height;
+        const cssWidth = bg.screenshot.cssWidth || pixelWidth;
+        const cssHeight = bg.screenshot.cssHeight || pixelHeight;
+        $('canvas').width = $('mask-canvas').width = photoshop.canvas.width = pixelWidth;
+        $('canvas').height = $('mask-canvas').height = photoshop.canvas.height = pixelHeight;
+        photoshop.fitImageToViewport();
         var context = photoshop.canvas.getContext('2d');
         context.drawImage(bg.screenshot.canvas, 0, 0);
         context = $('canvas').getContext('2d');
@@ -122,9 +149,9 @@ var photoshop = {
         photoshop.initCanvas();
         photoshop.tabTitle = bg.screenshot.tab.title;
         var showBoxHeight = function() {
-            $('showBox').style.height = window.innerHeight - photoshop.offsetY - 1;
+            $('showBox').style.height = (window.innerHeight - photoshop.offsetY - 1) + 'px';
         }
-        setTimeout(showBoxHeight, 50);
+        setTimeout(() => { showBoxHeight(); photoshop.fitImageToViewport(); }, 50);
     },
     markCurrentElement: function(element) {
         if (element && element.parentNode) {
@@ -140,12 +167,10 @@ var photoshop = {
         }
     },
     openOptionPage: function() {
-        chrome.tabs.create({url: chrome.extension.getURL("options.html")});
+        chrome.tabs.create({url: chrome.runtime.getURL("options.html")});
     },
     closeCurrentTab: function() {
-        chrome.tabs.getSelected(null, function(tab) {
-            chrome.tabs.remove(tab.id);
-        });
+        chrome.tabs.getCurrent(tab => { if (tab) chrome.tabs.remove(tab.id); });
     },
     finish: function() {
         var context = $('canvas').getContext('2d');
@@ -201,55 +226,22 @@ var photoshop = {
     },
     save: function() {
         photoshop.draw();
-        var formatParam = localStorage.screenshootQuality || 'png';
-        var dataUrl;
-        if (formatParam == 'jpeg' && isHighVersion())
-            dataUrl = $('canvas').toDataURL('image/jpeg', 0.5);
-        else
-            dataUrl = $('canvas').toDataURL('image/png');
-
-        // Here we use the plugin object in showimage.html 
-        // instead of the plugin object in background page, 
-        // so that the SaveScreenshot dialog will be a modal dialog.
-        var pluginobj = document.getElementById('pluginobj');
-        if (!localStorage.lastSavePath)
-            localStorage.lastSavePath = localStorage.savePath;
-        pluginobj.SaveScreenshot(
-                dataUrl, photoshop.tabTitle, localStorage.lastSavePath,
-                function(result, path) {
-                    var message = chrome.i18n.getMessage('save_fail');
-                    var messageClass = 'tip_failed';
-                    if (result == 0 && path) {
-                        var i18nMessage = chrome.i18n.getMessage('saved_to_path');
-                        message = i18nMessage + '<a title="' + path +
-                                '" onclick="bg.plugin.openSavePath(\'' +
-                                path.replace(/\\/g, '/') + '\');">' + path + '</a>';
-                        messageClass = 'tip_succeed';
-                        localStorage.lastSavePath = path;
-                    }
-                    if (result != 2)
-                        photoshop.showTip(messageClass, message, 5000);
-                },
-                chrome.i18n.getMessage("save_image"));
+        const dataUrl=$('canvas').toDataURL('image/png');
+        chrome.downloads.download({url:dataUrl, filename:'contrast-analysis.png',saveAs:true}, () => {
+            if (chrome.runtime.lastError) console.error(chrome.runtime.lastError.message);
+        });
         photoshop.finish();
     },
-    copy: function() {
+    copy: async function() {
         photoshop.draw();
-        var formatParam = localStorage.screenshootQuality || 'png';
-        var dataUrl;
-        if (formatParam == 'jpeg' && isHighVersion())
-            dataUrl = $('canvas').toDataURL('image/jpeg', 0.5);
-        else
-            dataUrl = $('canvas').toDataURL('image/png');
-        var copyFlag = bg.plugin.saveToClipboard(dataUrl);
-        var messageKey = 'tip_copy_failed';
-        var messageClass = 'tip_failed';
-        if (copyFlag) {
-            messageKey = 'tip_copy_succeed';
-            messageClass = 'tip_succeed';
+        try {
+            const blob = await new Promise(resolve => $('canvas').toBlob(resolve, 'image/png'));
+            await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+            photoshop.showTip('tip_succeed', chrome.i18n.getMessage('tip_copy_succeed'));
+        } catch (error) {
+            console.error('Copy failed:', error);
+            photoshop.showTip('tip_failed', chrome.i18n.getMessage('tip_copy_failed'));
         }
-        var message = chrome.i18n.getMessage(messageKey);
-        photoshop.showTip(messageClass, message);
         photoshop.finish();
     },
     printImage: function() {
@@ -263,7 +255,7 @@ var photoshop = {
         var width = $('canvas').width;
         var height = $('canvas').height;
         var pluginobj = document.getElementById('pluginobj');
-        pluginobj.PrintImage(dataUrl, photoshop.tabTitle, width, height);
+        window.print();
         photoshop.finish();
     },
     drawLineOnMaskCanvas: function(startX, startY, endX, endY, type, layerId) {
@@ -448,7 +440,21 @@ var photoshop = {
     }
 };
 
-photoshop.init();
+chrome.storage.local.get('lastCapture', ({lastCapture}) => {
+    if (!lastCapture?.dataUrl) { console.error('No captured image available'); return; }
+    const img = new Image();
+    img.onload = () => {
+        bg.screenshot.canvas.width=img.naturalWidth;
+        bg.screenshot.canvas.height=img.naturalHeight;
+        bg.screenshot.canvas.getContext('2d').drawImage(img,0,0);
+        bg.screenshot.tab.title=lastCapture.title || 'Screenshot';
+        bg.screenshot.cssWidth=Number(lastCapture.cssWidth) || img.naturalWidth;
+        bg.screenshot.cssHeight=Number(lastCapture.cssHeight) || img.naturalHeight;
+        photoshop.init();
+        beginContrastAnalysis();
+    };
+    img.src=lastCapture.dataUrl;
+});
 $('photo').addEventListener('mousemove', photoshop.onMouseMove, true);
 $('photo').addEventListener('mousedown', photoshop.onMouseDown, true);
 $('photo').addEventListener('mouseup', photoshop.onMouseUp, true);
@@ -547,3 +553,5 @@ function enableDownloadButton(v) {
     }
 }
 
+
+window.addEventListener('resize', () => photoshop.fitImageToViewport());

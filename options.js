@@ -6,15 +6,15 @@ Read license.txt for licensing information.
 
 
 
-var bg = chrome.extension.getBackgroundPage();
+var bg = null;
 
 function $(id) {
   return document.getElementById(id);
 }
 
 function isHighVersion() {
-  var version = navigator.userAgent.match(/Chrome\/(\d+)/)[1];
-  return version > 9;
+  var match = navigator.userAgent.match(/Chrome\/(\d+)/);
+  return !match || Number(match[1]) > 9;
 }
 
 function init() {
@@ -56,9 +56,7 @@ function save() {
 
 function saveAndClose() {
   if (save()) {
-    chrome.tabs.getSelected(null, function(tab) {
-      chrome.tabs.remove(tab.id);
-    });
+    chrome.tabs.getCurrent(tab => { if (tab) chrome.tabs.remove(tab.id); });
     }
 }
 
