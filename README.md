@@ -36,7 +36,7 @@ Note, when installing the extension it will ask you for permission to access you
 ## Notes on the Code
 
 Some of this code is from a screen capture extension from Google (which seems to have been abandoned).
-The original author, Greg Kraus, used the code from that project for creating the draggable selection box. This code has lots of other functionality, most of which was removed. There could still be some remnants of this code that is basically dormant in the Color Contrast Analyzer at this point.
+The original author, Greg Kraus, used the code from that     project for creating the draggable selection box. This code has lots of other functionality, most of which was removed. There could still be some remnants of this code that is basically dormant in the Color Contrast Analyzer at this point.
 
 ## Versions
 

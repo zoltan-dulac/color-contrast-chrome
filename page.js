@@ -331,8 +331,11 @@ var page = {
         page.removeSelectionArea();
       }
       switch (request.msg) {
+        case 'capture_error':
+          console.error('[CCA] Capture failed:', request.error);
+          return false;
         case 'capture_window': response(page.getWindowSize()); return true;break;
-        case 'show_selection_area': page.showSelectionArea(); return true;break;
+        case 'show_selection_area': page.showSelectionArea(); response({ok: true}); return false;
         case 'scroll_init': // Capture whole page.
           response(page.scrollInit(0, 0, page.getDocumentDimensions().width,
               page.getDocumentDimensions().height, 'captureWhole'));
@@ -361,7 +364,22 @@ var page = {
   * Send Message to background page
   */
   sendMessage: function(message) {
-    chrome.runtime.sendMessage(message);
+    if (message.msg === 'capture_selected') {
+      console.info('[CCA] Sending selected-region capture request', {
+        startX: page.startX, startY: page.startY,
+        endX: page.endX, endY: page.endY
+      });
+      chrome.runtime.sendMessage(message, function(result) {
+        if (chrome.runtime.lastError || !result || !result.ok) {
+          console.error('[CCA] Region request failed:',
+            chrome.runtime.lastError?.message || result?.error || 'No response');
+        } else {
+          console.info('[CCA] Region request accepted by background');
+        }
+      });
+    } else {
+      chrome.runtime.sendMessage(message);
+    }
   },
 
   /**
@@ -403,6 +421,9 @@ var page = {
       'docWidth': docWidth,
       'visibleWidth': viewPortSize.width,
       'visibleHeight': viewPortSize.height,
+      // Screenshot includes the full window viewport (including scrollbar area).
+      'screenWidth': window.innerWidth,
+      'screenHeight': window.innerHeight,
       'canvasWidth': canvasWidth,
       'canvasHeight': canvasHeight,
       'scrollXCount': 0,
@@ -445,7 +466,8 @@ var page = {
       var x = page.scrollXCount;
       var y = page.scrollYCount;
       page.scrollYCount++;
-      return { msg: 'scroll_next_done',scrollXCount: x, scrollYCount: y };
+      return { msg: 'scroll_next_done',scrollXCount: x, scrollYCount: y,
+        scrollX: window.scrollX, scrollY: window.scrollY }; 
     }  else {
       window.scrollTo(page.startX, page.startY);
       this.restoreFixedElements();
