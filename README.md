@@ -1,6 +1,6 @@
 # Color Contrast Analyzer Extension for Chrome and Firefox
 
-This was based on the Color Contrast Analyzer Extension for Google Chrome created by Greg Kraus of NC State University IT Accessibility Resources.  Since it hadn't been updated for Google Chrome's Manifest v3, it was abandoned.  This project took that code, updated it to support Manifest v3, and added Firefox Extension support as well.
+This tools is based on the [Color Contrast Analyzer Extension for Google Chrome (archive link)](https://web.archive.org/web/20191019190253/https://accessibility.oit.ncsu.edu/tools/color-contrast-chrome/) created by [Greg Kraus](https://www.linkedin.com/in/gregorykraus/) of [NC State University IT Accessibility Resources](https://accessibility.ncsu.edu/).  Since it hadn't been updated for Google Chrome's Manifest v3, it seems like it was abandoned as [the original github site for that project](https://github.com/gdkraus/color-contrast-chrome).  This repositoy forked that code, updated it to support Manifest v3, and added Firefox Extension support as well.
 
 This extension allows you to analyze text color contrast problems on a web page according to the WCAG 2 color contrast requirements.
 
@@ -35,11 +35,8 @@ Note, when installing the extension it will ask you for permission to access you
 
 ## Notes on the Code
 
-Some of this code is from another project from Google.
-
-https://chrome.google.com/webstore/detail/screen-capture-by-google/cpngackimfmofbokmjmljamhdncknpmg
-
-The original author, Greg Kraus, used the code from this project for creating the draggable selection box. This code has lots of other functionality, most of which was removed. There could still be some remnants of this code that is basically dormant in the Color Contrast Analyzer at this point.
+Some of this code is from a screen capture extension from Google (which seems to have been abandoned).
+The original author, Greg Kraus, used the code from that project for creating the draggable selection box. This code has lots of other functionality, most of which was removed. There could still be some remnants of this code that is basically dormant in the Color Contrast Analyzer at this point.
 
 ## Versions
 
