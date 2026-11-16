@@ -1,6 +1,6 @@
 # Envision: a Color Contrast Analyzer Extension for Chrome and Firefox
 
-This tool is based on the [Color Contrast Analyzer Extension for Google Chrome (archive link)](https://web.archive.org/web/20191019190253/https://accessibility.oit.ncsu.edu/tools/color-contrast-chrome/) created by [Greg Kraus](https://www.linkedin.com/in/gregorykraus/) of [NC State University IT Accessibility Resources](https://accessibility.ncsu.edu/).  Since it hadn't been updated for Google Chrome's Manifest v3, it seems like it was abandoned as [the original github site for that project](https://github.com/gdkraus/color-contrast-chrome).  This repositoy forked that code, updated it to support Manifest v3, and added Firefox Extension support as well.
+This tool is based on the [Color Contrast Analyzer Extension for Google Chrome (archive link)](https://web.archive.org/web/20191019190253/https://accessibility.oit.ncsu.edu/tools/color-contrast-chrome/) created by [Greg Kraus](https://www.linkedin.com/in/gregorykraus/) of [NC State University IT Accessibility Resources](https://accessibility.ncsu.edu/).  Since it hadn't been updated for Google Chrome's Manifest v3, it seems like it was abandoned as [the original github site for that project](https://github.com/gdkraus/color-contrast-chrome).  This repository forked that code, updated it to support Manifest v3, and added Firefox Extension support as well.
 
 This extension allows you to analyze text color contrast problems on a web page according to the WCAG 2 color contrast requirements.
 
@@ -9,6 +9,10 @@ This extension allows you to analyze text color contrast problems on a web page 
 *   Analyze text over top of background images or gradients
 *   Analyze text in images
 *   Get a visual overview of the contrast of your page
+
+## HTML text-only contrast mode
+
+Choose **Analyze HTML text contrast** in the extension popup to inspect rendered DOM text against computed solid CSS background colours. Failing text is highlighted on the live page and listed in a keyboard-operable results panel. This mode uses per-text-run AA/AAA thresholds based on computed font size and weight, rather than a single threshold for an entire screenshot. Background images, gradients and other complex cases are **unassessed**, not assumed passing. See [TEXT-CONTRAST-MODE.md](TEXT-CONTRAST-MODE.md) for details and limitations.
 
 ## How to use the tool
 

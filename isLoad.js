@@ -19,7 +19,8 @@ function checkScriptLoad() {
         return true;
       }
     }
-    return true;
+    // Do not keep a response port open for other content-script messages.
+    return false;
   });
 }
 checkScriptLoad();

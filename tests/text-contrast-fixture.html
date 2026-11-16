@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Text-only contrast test fixture</title>
+<style>
+ body { background: #fff; color: #000; }
+ .bad { color: #aaa; }
+ .good { color: #000; }
+ .large { font-size: 24px; color: #999; }
+ .bold { font-size: 19px; font-weight: bold; color: #999; }
+ .unknown { background-image: linear-gradient(#fff, #000); color: #555; }
+ .hidden { display: none; }
+</style></head><body>
+<h1>HTML text contrast test</h1>
+<p class="good">Black text on white passes AA.</p>
+<p class="bad">Light grey text on white fails AA.</p>
+<p class="large">Large grey text on white fails 3:1.</p>
+<p class="bold">Bold grey text on white fails 3:1.</p>
+<p class="unknown">Gradient-backed text must be unassessed.</p>
+<p class="hidden">Hidden text must not be assessed.</p>
+</body></html>

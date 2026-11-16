@@ -356,7 +356,8 @@ var page = {
           //return true;
           break;
       }
-      return true;
+      // Unhandled messages are intended for other content-script listeners.
+      return false;
     });
   },
 

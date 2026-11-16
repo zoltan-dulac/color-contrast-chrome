@@ -33,6 +33,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         $('captureWindowItem').style.display = 'block';
         $('captureAreaItem').style.display = 'block';
         $('captureWebpageItem').style.display = 'block';
+        $('textContrastItem').style.display = 'block';
     } else if (request.msg == 'page_uncapturable') {
         i18nReplace('tip', 'special');
         if (isWindowsOrLinux) {
@@ -45,6 +46,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         $('captureWindowItem').style.display = 'none';
         $('captureAreaItem').style.display = 'none';
         $('captureWebpageItem').style.display = 'none';
+        $('textContrastItem').style.display = 'none';
     }
     return true;
 });
@@ -125,7 +127,7 @@ function init() {
             function(response) {
 
                 isScriptLoad = true;
-                if (response.msg == 'capturable') {
+                if (response && response.msg == 'capturable') {
                     $('tip').style.display = 'none';
                     if (isWindowsOrLinux) {
                         //$('captureScreenItem').style.display = 'block';
@@ -134,6 +136,7 @@ function init() {
                     $('captureWindowItem').style.display = 'block';
                     $('captureAreaItem').style.display = 'block';
                     $('captureWebpageItem').style.display = 'block';
+                    $('textContrastItem').style.display = 'block';
                     var textWidth = $('captureWindowText')['scrollWidth'];
                     resizeDivWidth('captureWindowText', textWidth);
                     resizeDivWidth('captureAreaText', textWidth);
@@ -144,7 +147,7 @@ function init() {
                     //$('captureWindowShortcut').innerText = '\u2325\u2318V';
                     //$('captureWebpageShortcut').innerText = '\u2325\u2318H';
                     //}
-                } else if (response.msg == 'uncapturable') {
+                } else if (response && response.msg == 'uncapturable') {
                     i18nReplace('tip', 'special');
                     if (isWindowsOrLinux) {
                         //$('captureScreenItem').style.display = 'block';
@@ -239,6 +242,16 @@ function init() {
             toDo('capture_webpage');
         })
     });
+    function toggleTextContrast() {
+        chrome.tabs.query({active:true,currentWindow:true}, tabs => {
+            if (!tabs[0]) return;
+            chrome.tabs.sendMessage(tabs[0].id, {msg:'cca_toggle_text_contrast'}, result => {
+                if (chrome.runtime.lastError || !result?.ok) console.error('Text contrast failed:', chrome.runtime.lastError?.message || result?.error);
+            });
+            window.close();
+        });
+    }
+    $('textContrastAction').addEventListener('click', toggleTextContrast);
     $('captureScreenItem').addEventListener('click', function(e) {
         toDo('capture_screen');
     });

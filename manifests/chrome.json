@@ -9,7 +9,8 @@
       ],
       "js": [
         "page.js",
-        "shortcut.js"
+        "shortcut.js",
+        "text-contrast.js"
       ],
       "matches": [
         "http://*/*",
