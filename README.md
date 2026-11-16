@@ -122,3 +122,8 @@ The original author, Greg Kraus, used the code from that     project for creatin
 ## Cross-browser builds
 
 Run `python3 build.py` to generate Chrome and Firefox builds from shared source. See [CROSS-BROWSER.md](CROSS-BROWSER.md).
+
+
+## Website screenshot upload library
+
+The same scanning worker now powers **Chrome**, **Firefox**, and a standalone **JavaScript screenshot upload library**. Build all three with `python3 build.py`; see [LIBRARY.md](LIBRARY.md) for the API, accessible upload demo, and deployment instructions. The shared algorithm lives in `shared/contrast-worker.js`, with mask compositing in `shared/contrast-renderer.js`.

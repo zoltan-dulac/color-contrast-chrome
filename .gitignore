@@ -1,8 +1,6 @@
-/nbproject/
-/dist/
-*.zip
+dist/
+__pycache__/
 .DS_Store
-
 # Ignore all hidden files and directories
 .*
 

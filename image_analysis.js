@@ -35,18 +35,8 @@ function draw() {
     var cvImage = cvContext.getImageData(0, 0, w, h);
     var cvData = cvImage.data;
 
-    // merge the mask (75%) and the original image (25%)
-    for (var m = 0; m < h; m += 1) {
-        for (var n = 0; n < w; n += 1) {
-            pixelData = image[m * (w) + n];
-            pixelLocation = (m * (w) + n) * 4
-            id.data[pixelLocation + 0] = pixelData * .75 + cvData[pixelLocation + 0] * .25;
-            id.data[pixelLocation + 1] = pixelData * .75 + cvData[pixelLocation + 1] * .25;
-            id.data[pixelLocation + 2] = pixelData * .75 + cvData[pixelLocation + 2] * .25;
-            id.data[pixelLocation + 3] = 255;
-        }
-        // draw the pixel
-    }
+    // The website library and extension use the same mask rendering code.
+    id.data.set(CCAContrastRenderer.composeMask(image, cvData));
     myContext.putImageData(id, 0, 0);
 
     var bb = dataURItoBlob(canv.toDataURL("image/png"));

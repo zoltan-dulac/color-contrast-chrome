@@ -448,7 +448,7 @@ var page = {
     if (page.scrollXCount * page.visibleHeight < page.captureHeight) {
       this.restoreBottomRightOfFixedPositionElements();
       var viewPortSize = page.getViewPortSize();
-      window.scrollTo(
+      console.log('b'); window.scrollTo(
           page.scrollYCount * viewPortSize.width + page.scrollX,
           page.scrollXCount * viewPortSize.height + page.scrollY);
 
