@@ -82,3 +82,11 @@ Promise result: `{width, height, threshold, radius, mask, originalCanvas, maskCa
 The detector finds **contrasting pixel boundaries**, not HTML text nodes or WCAG failures. It does not decide whether text is large or bold. Uploaded screenshots must already be captured by the visitor, and the pixel radius is in screenshot (physical) pixels. Extremely large screenshots use substantial browser memory and analysis time. Browser caps on canvas size may apply.
 
 The scan algorithm is the unmodified algorithm from the source extension (including its legacy contrast-ratio rounding behavior), not an independent reimplementation. `shared/contrast-renderer.js` is also used by both extensions.
+
+## Screenshot fidelity and mask toggle
+
+The demo now uses the original uploaded file as an `<img>` for the **mask hidden** view, and the generated composite canvas only for the **mask visible** view. Nothing is drawn onto the original. The worker and 75% mask composite are shared with the extensions and have not been changed.
+
+**Important:** Upload an unmodified screenshot. If the selected PNG/JPEG already contains a contrast mask (for example, one downloaded from the extension with the mask enabled), no renderer can recover the missing original pixels; the unmasked view will correctly display the uploaded, already-masked file.
+
+Use the same screenshot file, WCAG threshold and radius in both environments to compare results. Differences from re-capturing live content, image compression, scaling, or a changing animation can produce different edge detections.
