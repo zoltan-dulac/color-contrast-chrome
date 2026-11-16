@@ -392,7 +392,12 @@ var page = {
     var dimensions = page.getDocumentDimensions();
     var docWidth = dimensions.width;
     var docHeight = dimensions.height;
-    window.scrollTo(startX, startY);
+    // A region is selected in document coordinates while the user is already
+    // looking at it. Do not jump the viewport to the selection's top-left.
+    // For whole-page capture, retain the existing scroll-to-origin behavior.
+    if (type !== 'captureSelected') {
+      window.scrollTo(startX, startY);
+    }
 
     this.handleFixedElements('top_left');
     this.handleSecondToLastCapture();
@@ -469,7 +474,9 @@ var page = {
       return { msg: 'scroll_next_done',scrollXCount: x, scrollYCount: y,
         scrollX: window.scrollX, scrollY: window.scrollY }; 
     }  else {
-      window.scrollTo(page.startX, page.startY);
+      // Restore the viewport to where this capture started, not to the
+      // selection rectangle's coordinates. This also avoids a final jump.
+      window.scrollTo(page.scrollX, page.scrollY);
       this.restoreFixedElements();
       this.hookBodyScrollValue(false);
       return {'msg': 'scroll_finished'};
