@@ -22,6 +22,36 @@
     return canvas;
   }
 
+  // Use image load/error events instead of HTMLImageElement.decode(). Safari
+  // can leave decode() pending for local Blob URLs. Keep listeners attached
+  // before assigning src, including for cached and very small images.
+  function waitForImage(image, timeoutMs = 30000) {
+    if (image.complete && image.naturalWidth > 0) return Promise.resolve(image);
+    return new Promise((resolve, reject) => {
+      let timeout;
+      const cleanup = () => {
+        clearTimeout(timeout);
+        image.removeEventListener('load', loaded);
+        image.removeEventListener('error', failed);
+      };
+      const loaded = () => {
+        cleanup();
+        image.naturalWidth > 0 ? resolve(image) : reject(new Error('The image has no pixels'));
+      };
+      const failed = () => {
+        cleanup();
+        reject(new Error('Unable to load the selected image'));
+      };
+      image.addEventListener('load', loaded);
+      image.addEventListener('error', failed);
+      timeout = setTimeout(() => { cleanup(); reject(new Error('Timed out loading the image')); }, timeoutMs);
+      if (image.complete) {
+        // Broken images may have completed before listeners were attached.
+        image.naturalWidth > 0 ? loaded() : (image.src && failed());
+      }
+    });
+  }
+
   async function loadCanvas(source) {
     if (source instanceof HTMLCanvasElement) return source;
     if (typeof ImageData !== 'undefined' && source instanceof ImageData) return canvasFromImageData(source);
@@ -33,7 +63,7 @@
       return canvas;
     }
     if (typeof HTMLImageElement !== 'undefined' && source instanceof HTMLImageElement) {
-      await source.decode();
+      await waitForImage(source);
       const canvas = document.createElement('canvas');
       canvas.width = source.naturalWidth;
       canvas.height = source.naturalHeight;
@@ -41,7 +71,7 @@
       return canvas;
     }
     if (source instanceof Blob) {
-      if (!source.type.startsWith('image/')) throw new TypeError('Please upload an image file.');
+      if (source.type && !source.type.startsWith('image/')) throw new TypeError('Please upload an image file.');
       const url = URL.createObjectURL(source);
       try { return await loadCanvasFromUrl(url); }
       finally { URL.revokeObjectURL(url); }
@@ -51,8 +81,9 @@
   }
   async function loadCanvasFromUrl(url) {
     const img = new Image();
+    const pending = waitForImage(img);
     img.src = url;
-    await img.decode();
+    await pending;
     return loadCanvas(img);
   }
   function paintedCanvas(width, height, rgba) {
@@ -95,6 +126,8 @@
         worker.onerror = event => {
           fail(new Error('Contrast analysis worker failed to load or execute: ' + (event.message || this.workerUrl)));
         };
+        worker.onmessageerror = () => fail(new Error('The browser could not read the contrast worker response'));
+
         worker.onmessage = event => {
           const msg = event.data;
           if (msg && typeof msg === 'object' && msg.data instanceof ArrayBuffer) {
@@ -115,7 +148,17 @@
           if (options.signal.aborted) { fail(new DOMException('Aborted','AbortError')); return; }
           options.signal.addEventListener('abort', () => fail(new DOMException('Aborted','AbortError')), {once:true});
         }
-        worker.postMessage({width,height,iterations:radius,contrastLevel:threshold,img:imageCopy.buffer}, [imageCopy.buffer]);
+        try {
+          worker.postMessage({width,height,iterations:radius,contrastLevel:threshold,img:imageCopy.buffer}, [imageCopy.buffer]);
+        } catch (error) {
+          // Some browser versions reject transferred buffers; a copied buffer
+          // preserves the same worker protocol while avoiding the transfer list.
+          try {
+            worker.postMessage({width,height,iterations:radius,contrastLevel:threshold,img:new Uint8Array(original.data).buffer});
+          } catch (fallbackError) {
+            fail(fallbackError);
+          }
+        }
       });
       if (mask.length !== width * height) throw new Error('Contrast worker returned an invalid mask');
       const maskRGBA = new Uint8ClampedArray(width * height * 4);
