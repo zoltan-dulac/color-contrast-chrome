@@ -1,6 +1,6 @@
-# Envision: a Color Contrast Analyzer Extension for Chrome and Firefox
+# Entelligible: a Color Contrast Analyzer Javascript Library and Extension for Chrome and Firefox
 
-This tool is based on the [Color Contrast Analyzer Extension for Google Chrome (archive link)](https://web.archive.org/web/20191019190253/https://accessibility.oit.ncsu.edu/tools/color-contrast-chrome/) created by [Greg Kraus](https://www.linkedin.com/in/gregorykraus/) of [NC State University IT Accessibility Resources](https://accessibility.ncsu.edu/).  Since it hadn't been updated for Google Chrome's Manifest v3, it seems like it was abandoned as [the original github site for that project](https://github.com/gdkraus/color-contrast-chrome).  This repositoy forked that code, updated it to support Manifest v3, and added Firefox Extension support as well.
+This tool is based on the [Color Contrast Analyzer Extension for Google Chrome (archive link)](https://web.archive.org/web/20191019190253/https://accessibility.oit.ncsu.edu/tools/color-contrast-chrome/) created by [Greg Kraus](https://www.linkedin.com/in/gregorykraus/) of [NC State University IT Accessibility Resources](https://accessibility.ncsu.edu/).  Since it hadn't been updated for Google Chrome's Manifest v3, it seems like it was abandoned as [the original github site for that project](https://github.com/gdkraus/color-contrast-chrome).  This repositoy forked that code, updated it to support Manifest v3, added Firefox Extension support, and refactored so it can be used as a web application as well.
 
 This extension allows you to analyze text color contrast problems on a web page according to the WCAG 2 color contrast requirements.
 
@@ -83,6 +83,7 @@ The original author, Greg Kraus, used the code from that     project for creatin
 * Added Google Manifest v3 support 
 * Added Firefox Support
 * Added support for Retina and High Density Displays.
+* Refactored to be a Javascript Library.
 
 ### The original NC State University IT Accessibility Resources repository:
 
